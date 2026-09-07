@@ -1,0 +1,32 @@
+name: Assemble SPB images
+
+on:
+  push:
+    paths:
+      - '.upload/trigger-spb.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble archive and publish images
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p images/115fz/saint-petersburg
+          cat .upload/spb_archive.part*.b64 | tr -d '\n' | base64 -d > /tmp/spb_images.zip
+          unzip -o /tmp/spb_images.zip -d images/115fz/saint-petersburg
+          rm -rf .upload
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add images/115fz/saint-petersburg .upload || true
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+            exit 0
+          fi
+          git commit -m 'Add Saint Petersburg 115-FZ Avito images'
+          git push
